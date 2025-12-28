@@ -1,0 +1,4 @@
+We need to make elastic search connect to the postgres database that can be located with the following URL :
+jdbc:postgresql://localhost:5432/postgres
+Then we need elastic search to load into memory all the entries in diagnostic_reference.
+We finally need to be able to search for data and get json lists in response.
