@@ -1,0 +1,5 @@
+We need to create a gradle project for a jboss webservice with standard structure.
+Please add dependencies for : 
+- elasticsearch
+- postgresql
+The project 
