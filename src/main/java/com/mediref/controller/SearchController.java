@@ -17,13 +17,20 @@ import java.util.stream.StreamSupport;
 public class SearchController {
 
     private final DiagnosticReferenceSearchRepository searchRepository;
+    private final com.mediref.repository.DrugSearchRepository drugSearchRepository;
 
-    public SearchController(DiagnosticReferenceSearchRepository searchRepository) {
+    public SearchController(DiagnosticReferenceSearchRepository searchRepository, com.mediref.repository.DrugSearchRepository drugSearchRepository) {
         this.searchRepository = searchRepository;
+        this.drugSearchRepository = drugSearchRepository;
     }
 
-    @GetMapping
-    public List<DiagnosticReferenceDoc> search(@RequestParam("q") String query) {
+    @GetMapping("/diagnosis")
+    public List<DiagnosticReferenceDoc> searchDiagnosys(@RequestParam("q") String query) {
         return searchRepository.searchByAny(query);
+    }
+
+    @GetMapping("/drugs")
+    public java.util.List<com.mediref.model.DrugDoc> searchDrug(@RequestParam("q") String query) {
+        return drugSearchRepository.searchByAny(query);
     }
 }
