@@ -1,11 +1,7 @@
 package com.mediref.service;
 
-import com.mediref.model.DiagnosticReference;
-import com.mediref.model.DiagnosticReferenceDoc;
-import com.mediref.repository.DiagnosticReferenceRepository;
-import com.mediref.repository.DiagnosticReferenceSearchRepository;
-import com.mediref.repository.DrugRepository;
-import com.mediref.repository.DrugSearchRepository;
+import com.mediref.model.*;
+import com.mediref.repository.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -24,24 +20,39 @@ public class DataSynchronizer {
     private final Logger logger = LoggerFactory.getLogger(DataSynchronizer.class);
     private final DiagnosticReferenceRepository jpaRepository;
     private final DiagnosticReferenceSearchRepository searchRepository;
+    private final DrugRepository drugRepository;
+    private final DrugSearchRepository drugSearchRepository;
+    private final SnomedCTRepository snomedCTRepository;
+    private final SnomedCTSearchRepository snomedCTSearchRepository;
 
     public DataSynchronizer(DiagnosticReferenceRepository jpaRepository,
                             DiagnosticReferenceSearchRepository searchRepository,
                             DrugRepository drugRepository,
-                            DrugSearchRepository drugSearchRepository) {
+                            DrugSearchRepository drugSearchRepository,
+                            SnomedCTRepository snomedCTRepository,
+                            SnomedCTSearchRepository snomedCTSearchRepository) {
         this.jpaRepository = jpaRepository;
         this.searchRepository = searchRepository;
         this.drugRepository = drugRepository;
         this.drugSearchRepository = drugSearchRepository;
+        this.snomedCTRepository = snomedCTRepository;
+        this.snomedCTSearchRepository = snomedCTSearchRepository;
     }
 
-    // Run every 5 minutes (300,000 ms), with an initial delay of 1 minute (60,000 ms)
-    @Scheduled(fixedRate = 300000, initialDelay = 60000)
+    // Run every hour, with an initial delay of 10 seconds
+    @Scheduled(fixedRate = 3600000, initialDelay = 10000)
     public void synchronize() {
         logger.info("Starting data synchronization...");
+        synchronizeDiagnostic();
+        synchronizeDrugs();
+        synchronizeSnomed();
+    }
+
+    public void synchronizeDiagnostic() {
+        logger.info("Starting diagnostic synchronization...");
         try {
             int pageIs = 0;
-            int pageSize = 500;
+            int pageSize = 1000;
             Page<DiagnosticReference> page;
 
             do {
@@ -61,11 +72,9 @@ public class DataSynchronizer {
             } while (page.hasNext());
 
             logger.info("Diagnostic synchronization completed.");
-            
-            synchronizeDrugs();
 
         } catch (Exception e) {
-            logger.error("Error during data synchronization", e);
+            logger.error("Error during diagnostic synchronization", e);
         }
     }
 
@@ -80,14 +89,11 @@ public class DataSynchronizer {
         return doc;
     }
 
-    private final com.mediref.repository.DrugRepository drugRepository;
-    private final com.mediref.repository.DrugSearchRepository drugSearchRepository;
-
     public void synchronizeDrugs() {
         logger.info("Starting drug synchronization...");
         try {
             int pageIs = 0;
-            int pageSize = 100;
+            int pageSize = 500;
             Page<com.mediref.model.Drug> page;
 
             do {
@@ -113,8 +119,38 @@ public class DataSynchronizer {
         }
     }
 
-    private com.mediref.model.DrugDoc convertDrugToDoc(com.mediref.model.Drug entity) {
-        com.mediref.model.DrugDoc doc = new com.mediref.model.DrugDoc();
+    public void synchronizeSnomed() {
+        logger.info("Starting SnomedCT synchronization...");
+        try {
+            int pageIs = 0;
+            int pageSize = 1000; // Snomed might be large, but let's start safe
+            Page<SnomedCT> page;
+
+            do {
+                Pageable pageable = PageRequest.of(pageIs, pageSize);
+                page = snomedCTRepository.findAll(pageable);
+
+                List<SnomedCTDoc> docs = page.getContent().stream()
+                        .map(this::convertSnomedToDoc)
+                        .collect(Collectors.toList());
+
+                if (!docs.isEmpty()) {
+                    snomedCTSearchRepository.saveAll(docs);
+                    logger.info("Synchronized batch {} ({} Snomed entries) to Elasticsearch.", pageIs + 1, docs.size());
+                }
+
+                pageIs++;
+            } while (page.hasNext());
+
+            logger.info("SnomedCT synchronization completed.");
+
+        } catch (Exception e) {
+            logger.error("Error during SnomedCT synchronization", e);
+        }
+    }
+
+    private DrugDoc convertDrugToDoc(Drug entity) {
+        DrugDoc doc = new DrugDoc();
         doc.setId(entity.getDrugCode());
         doc.setDescription(entity.getDescription());
         doc.setCodeATC(entity.getCodeATC());
@@ -131,6 +167,16 @@ public class DataSynchronizer {
         doc.setPh(entity.getPh());
         doc.setReimbursementRate(entity.getReimbursementRate());
         doc.setIsGeneric(entity.getIsGeneric());
+        return doc;
+    }
+
+    private SnomedCTDoc convertSnomedToDoc(SnomedCT entity) {
+        SnomedCTDoc doc = new SnomedCTDoc();
+        doc.setId(entity.getCode());
+        doc.setCode(entity.getCode());
+        doc.setValueSet(entity.getValueSet());
+        doc.setDescription(entity.getDescription());
+        doc.setPurpose(entity.getPurpose());
         return doc;
     }
 }
