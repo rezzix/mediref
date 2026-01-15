@@ -4,15 +4,15 @@ import com.mediref.model.*;
 import com.mediref.repository.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
-
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
 
 @Service
 public class DataSynchronizer {
@@ -43,33 +43,37 @@ public class DataSynchronizer {
     @Scheduled(fixedRate = 3600000, initialDelay = 10000)
     public void synchronize() {
         logger.info("Starting data synchronization...");
-        synchronizeDiagnostic();
-        synchronizeDrugs();
-        synchronizeSnomed();
+
+        CompletableFuture<Void> diagnosticTask = CompletableFuture.runAsync(this::synchronizeDiagnostic);
+        CompletableFuture<Void> drugTask = CompletableFuture.runAsync(this::synchronizeDrugs);
+        CompletableFuture<Void> snomedTask = CompletableFuture.runAsync(this::synchronizeSnomed);
+
+        CompletableFuture.allOf(diagnosticTask, drugTask, snomedTask).join();
+        logger.info("All data synchronization tasks completed.");
     }
 
     public void synchronizeDiagnostic() {
         logger.info("Starting diagnostic synchronization...");
         try {
-            int pageIs = 0;
-            int pageSize = 1000;
-            Page<DiagnosticReference> page;
+            int pageSize = 2000;
+            long lastSeenId = 0L;
+            List<DiagnosticReference> batch;
 
             do {
-                Pageable pageable = PageRequest.of(pageIs, pageSize);
-                page = jpaRepository.findAll(pageable);
+                Pageable pageable = PageRequest.of(0, pageSize, Sort.by("id").ascending());
+                batch = jpaRepository.findByIdGreaterThan(lastSeenId, pageable);
 
-                List<DiagnosticReferenceDoc> docs = page.getContent().stream()
-                        .map(this::convertToDoc)
-                        .collect(Collectors.toList());
+                if (!batch.isEmpty()) {
+                    List<DiagnosticReferenceDoc> docs = batch.stream()
+                            .map(this::convertToDoc)
+                            .collect(Collectors.toList());
 
-                if (!docs.isEmpty()) {
                     searchRepository.saveAll(docs);
-                    logger.info("Synchronized batch {} ({} records) to Elasticsearch.", pageIs + 1, docs.size());
+                    DiagnosticReference lastEntity = batch.get(batch.size() - 1);
+                    lastSeenId = lastEntity.getId();
+                    logger.info("Synchronized batch of {} records (last id: {}) to Elasticsearch.", docs.size(), lastSeenId);
                 }
-
-                pageIs++;
-            } while (page.hasNext());
+            } while (!batch.isEmpty());
 
             logger.info("Diagnostic synchronization completed.");
 
@@ -92,25 +96,25 @@ public class DataSynchronizer {
     public void synchronizeDrugs() {
         logger.info("Starting drug synchronization...");
         try {
-            int pageIs = 0;
-            int pageSize = 500;
-            Page<com.mediref.model.Drug> page;
+            int pageSize = 2000;
+            long lastSeenId = 0L;
+            List<Drug> batch;
 
             do {
-                Pageable pageable = PageRequest.of(pageIs, pageSize);
-                page = drugRepository.findAll(pageable);
+                Pageable pageable = PageRequest.of(0, pageSize, Sort.by("drugCode").ascending());
+                batch = drugRepository.findByDrugCodeGreaterThan(lastSeenId, pageable);
 
-                List<com.mediref.model.DrugDoc> docs = page.getContent().stream()
-                        .map(this::convertDrugToDoc)
-                        .collect(Collectors.toList());
-
-                if (!docs.isEmpty()) {
+                if (!batch.isEmpty()) {
+                    List<DrugDoc> docs = batch.stream()
+                            .map(this::convertDrugToDoc)
+                            .collect(Collectors.toList());
+                    
                     drugSearchRepository.saveAll(docs);
-                    logger.info("Synchronized batch {} ({} drugs) to Elasticsearch.", pageIs + 1, docs.size());
+                    Drug lastEntity = batch.get(batch.size() - 1);
+                    lastSeenId = lastEntity.getDrugCode();
+                    logger.info("Synchronized batch of {} drugs (last id: {}) to Elasticsearch.", docs.size(), lastSeenId);
                 }
-
-                pageIs++;
-            } while (page.hasNext());
+            } while (!batch.isEmpty());
 
             logger.info("Drug synchronization completed.");
 
@@ -122,25 +126,25 @@ public class DataSynchronizer {
     public void synchronizeSnomed() {
         logger.info("Starting SnomedCT synchronization...");
         try {
-            int pageIs = 0;
-            int pageSize = 1000; // Snomed might be large, but let's start safe
-            Page<SnomedCT> page;
+            int pageSize = 2000;
+            long lastSeenId = 0L;
+            List<SnomedCT> batch;
 
             do {
-                Pageable pageable = PageRequest.of(pageIs, pageSize);
-                page = snomedCTRepository.findAll(pageable);
+                Pageable pageable = PageRequest.of(0, pageSize, Sort.by("code").ascending());
+                batch = snomedCTRepository.findByCodeGreaterThan(lastSeenId, pageable);
 
-                List<SnomedCTDoc> docs = page.getContent().stream()
-                        .map(this::convertSnomedToDoc)
-                        .collect(Collectors.toList());
+                if (!batch.isEmpty()) {
+                    List<SnomedCTDoc> docs = batch.stream()
+                            .map(this::convertSnomedToDoc)
+                            .collect(Collectors.toList());
 
-                if (!docs.isEmpty()) {
                     snomedCTSearchRepository.saveAll(docs);
-                    logger.info("Synchronized batch {} ({} Snomed entries) to Elasticsearch.", pageIs + 1, docs.size());
+                    SnomedCT lastEntity = batch.get(batch.size() - 1);
+                    lastSeenId = lastEntity.getCode();
+                    logger.info("Synchronized batch of {} Snomed entries (last id: {}) to Elasticsearch.", docs.size(), lastSeenId);
                 }
-
-                pageIs++;
-            } while (page.hasNext());
+            } while (!batch.isEmpty());
 
             logger.info("SnomedCT synchronization completed.");
 
