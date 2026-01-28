@@ -1,7 +1,7 @@
 package com.mediref.controller;
 
 import com.mediref.model.DiagnosticReferenceDoc;
-import com.mediref.repository.*;
+import com.mediref.repository.search.*;
 import com.mediref.model.*;
 
 import org.springframework.web.bind.annotation.GetMapping;
@@ -21,13 +21,16 @@ public class SearchController {
     private final DiagnosticReferenceSearchRepository searchRepository;
     private final DrugSearchRepository drugSearchRepository;
     private final SnomedCTSearchRepository snomedCTSearchRepository;
+    private final LoincSearchRepository loincSearchRepository;
 
     public SearchController(DiagnosticReferenceSearchRepository searchRepository, 
                             DrugSearchRepository drugSearchRepository,
-                            SnomedCTSearchRepository snomedCTSearchRepository) {
+                            SnomedCTSearchRepository snomedCTSearchRepository,
+                            LoincSearchRepository loincSearchRepository) {
         this.searchRepository = searchRepository;
         this.drugSearchRepository = drugSearchRepository;
         this.snomedCTSearchRepository = snomedCTSearchRepository;
+        this.loincSearchRepository = loincSearchRepository;
     }
 
     @GetMapping("/diagnosis")
@@ -43,5 +46,10 @@ public class SearchController {
     @GetMapping("/snomed")
     public List<SnomedCTDoc> searchSnomed(@RequestParam("q") String query) {
         return snomedCTSearchRepository.searchByAny(query);
+    }
+
+    @GetMapping("/loinc")
+    public List<LoincDoc> searchLoinc(@RequestParam("q") String query) {
+        return loincSearchRepository.searchByAny(query);
     }
 }

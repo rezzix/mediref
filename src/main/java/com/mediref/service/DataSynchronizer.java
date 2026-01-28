@@ -1,7 +1,8 @@
 package com.mediref.service;
 
 import com.mediref.model.*;
-import com.mediref.repository.*;
+import com.mediref.repository.jpa.*;
+import com.mediref.repository.search.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.PageRequest;
@@ -24,31 +25,38 @@ public class DataSynchronizer {
     private final DrugSearchRepository drugSearchRepository;
     private final SnomedCTRepository snomedCTRepository;
     private final SnomedCTSearchRepository snomedCTSearchRepository;
+    private final LoincRepository loincRepository;
+    private final LoincSearchRepository loincSearchRepository;
 
     public DataSynchronizer(DiagnosticReferenceRepository jpaRepository,
                             DiagnosticReferenceSearchRepository searchRepository,
                             DrugRepository drugRepository,
                             DrugSearchRepository drugSearchRepository,
                             SnomedCTRepository snomedCTRepository,
-                            SnomedCTSearchRepository snomedCTSearchRepository) {
+                            SnomedCTSearchRepository snomedCTSearchRepository,
+                            LoincRepository loincRepository,
+                            LoincSearchRepository loincSearchRepository) {
         this.jpaRepository = jpaRepository;
         this.searchRepository = searchRepository;
         this.drugRepository = drugRepository;
         this.drugSearchRepository = drugSearchRepository;
         this.snomedCTRepository = snomedCTRepository;
         this.snomedCTSearchRepository = snomedCTSearchRepository;
+        this.loincRepository = loincRepository;
+        this.loincSearchRepository = loincSearchRepository;
     }
 
-    // Run every hour, with an initial delay of 10 seconds
     @Scheduled(fixedRate = 3600000, initialDelay = 10000)
     public void synchronize() {
+        System.out.println("DEBUG: synchronize() method triggered");
         logger.info("Starting data synchronization...");
 
         CompletableFuture<Void> diagnosticTask = CompletableFuture.runAsync(this::synchronizeDiagnostic);
         CompletableFuture<Void> drugTask = CompletableFuture.runAsync(this::synchronizeDrugs);
         CompletableFuture<Void> snomedTask = CompletableFuture.runAsync(this::synchronizeSnomed);
+        CompletableFuture<Void> loincTask = CompletableFuture.runAsync(this::synchronizeLoinc);
 
-        CompletableFuture.allOf(diagnosticTask, drugTask, snomedTask).join();
+        CompletableFuture.allOf(diagnosticTask, drugTask, snomedTask, loincTask).join();
         logger.info("All data synchronization tasks completed.");
     }
 
@@ -182,5 +190,52 @@ public class DataSynchronizer {
         doc.setDescription(entity.getDescription());
         doc.setPurpose(entity.getPurpose());
         return doc;
+    }
+
+    private LoincDoc convertLoincToDoc(Loinc entity) {
+        LoincDoc doc = new LoincDoc();
+        doc.setId(entity.getLoincNum());
+        doc.setLoincNum(entity.getLoincNum());
+        doc.setComponent(entity.getComponent());
+        doc.setClazz(entity.getClazz());
+        doc.setStatusText(entity.getStatusText());
+        doc.setDisplayName(entity.getDisplayName());
+        return doc;
+    }
+
+    public void synchronizeLoinc() {
+        System.out.println("DEBUG: synchronizeLoinc() started");
+        logger.info("Starting Loinc synchronization...");
+        try {
+            long dbCount = loincRepository.count();
+            System.out.println("DEBUG: Loinc records in DB: " + dbCount);
+            logger.info("Total Loinc records found in database: {}", dbCount);
+
+            int pageSize = 2000;
+            String lastSeenId = "";
+            List<Loinc> batch;
+
+            do {
+                Pageable pageable = PageRequest.of(0, pageSize, Sort.by("loincNum").ascending());
+                batch = loincRepository.findByLoincNumGreaterThan(lastSeenId, pageable);
+                
+                if (!batch.isEmpty()) {
+                    List<LoincDoc> docs = batch.stream()
+                            .map(this::convertLoincToDoc)
+                            .collect(Collectors.toList());
+
+                    loincSearchRepository.saveAll(docs);
+                    lastSeenId = batch.get(batch.size() - 1).getLoincNum();
+                    logger.info("Synchronized batch of {} Loinc entries (last id: {}) to Elasticsearch.", docs.size(), lastSeenId);
+                }
+            } while (!batch.isEmpty());
+
+            logger.info("Loinc synchronization completed.");
+
+        } catch (Exception e) {
+            System.err.println("DEBUG ERROR in synchronizeLoinc: " + e.getMessage());
+            e.printStackTrace();
+            logger.error("Error during Loinc synchronization", e);
+        }
     }
 }

@@ -1,4 +1,4 @@
-package com.mediref.repository;
+package com.mediref.repository.search;
 
 import com.mediref.model.DiagnosticReferenceDoc;
 

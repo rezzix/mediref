@@ -1,4 +1,4 @@
-package com.mediref.repository;
+package com.mediref.repository.jpa;
 
 import com.mediref.model.DiagnosticReference;
 import org.springframework.data.jpa.repository.JpaRepository;
