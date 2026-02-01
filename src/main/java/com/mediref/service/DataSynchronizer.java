@@ -197,9 +197,15 @@ public class DataSynchronizer {
         doc.setId(entity.getLoincNum());
         doc.setLoincNum(entity.getLoincNum());
         doc.setComponent(entity.getComponent());
+        doc.setProperty(entity.getProperty());
+        doc.setTimeAspct(entity.getTimeAspct());
+        doc.setSystem(entity.getSystem());
         doc.setClazz(entity.getClazz());
-        doc.setStatusText(entity.getStatusText());
+        doc.setFormula(entity.getFormula());
+        doc.setShortName(entity.getShortName());
+        doc.setLongCommonName(entity.getLongCommonName());
         doc.setDisplayName(entity.getDisplayName());
+        doc.setDefinitionDescription(entity.getDefinitionDescription());
         return doc;
     }
 

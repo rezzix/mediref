@@ -20,70 +20,31 @@ public class LoincDoc {
     private String component;
 
     @Field(type = FieldType.Text)
-    private String methodTyp;
+    private String property;
+
+    @Field(type = FieldType.Text)
+    private String timeAspct;
+
+    @Field(type = FieldType.Text)
+    private String system;
 
     @Field(type = FieldType.Text)
     private String clazz;
 
     @Field(type = FieldType.Text)
-    private String definitionDescription;
-
-    @Field(type = FieldType.Text)
-    private String status;
-
-    @Field(type = FieldType.Text)
-    private String consumerName;
-
-    @Field(type = FieldType.Integer)
-    private Integer classType;
-
-    @Field(type = FieldType.Text)
     private String formula;
-
-    @Field(type = FieldType.Text)
-    private String exmplAnswers;
-
-    @Field(type = FieldType.Text)
-    private String surveyQuestText;
-
-    @Field(type = FieldType.Text)
-    private String surveyQuestSrc;
-
-    @Field(type = FieldType.Text)
-    private String unitsRequired;
-
-    @Field(type = FieldType.Text)
-    private String relatedNames2;
 
     @Field(type = FieldType.Text)
     private String shortName;
 
     @Field(type = FieldType.Text)
-    private String orderObs;
-
-    @Field(type = FieldType.Text)
-    private String hl7FieldSubfieldId;
-
-    @Field(type = FieldType.Text)
-    private String externalCopyrightNotice;
-
-    @Field(type = FieldType.Text)
-    private String exampleUnits;
-
-    @Field(type = FieldType.Text)
     private String longCommonName;
 
     @Field(type = FieldType.Text)
-    private String exampleUcumUnits;
-
-    @Field(type = FieldType.Text)
-    private String statusReason;
-
-    @Field(type = FieldType.Text)
-    private String statusText;
-
-    @Field(type = FieldType.Text)
     private String displayName;
+
+    @Field(type = FieldType.Text)
+    private String definitionDescription;
 
     // Getters and Setters
 
@@ -111,44 +72,36 @@ public class LoincDoc {
         this.component = component;
     }
 
+    public String getProperty() {
+        return property;
+    }
+
+    public void setProperty(String property) {
+        this.property = property;
+    }
+
+    public String getTimeAspct() {
+        return timeAspct;
+    }
+
+    public void setTimeAspct(String timeAspct) {
+        this.timeAspct = timeAspct;
+    }
+
+    public String getSystem() {
+        return system;
+    }
+
+    public void setSystem(String system) {
+        this.system = system;
+    }
+
     public String getClazz() {
         return clazz;
     }
 
     public void setClazz(String clazz) {
         this.clazz = clazz;
-    }
-
-    public String getDefinitionDescription() {
-        return definitionDescription;
-    }
-
-    public void setDefinitionDescription(String definitionDescription) {
-        this.definitionDescription = definitionDescription;
-    }
-
-    public String getStatus() {
-        return status;
-    }
-
-    public void setStatus(String status) {
-        this.status = status;
-    }
-
-    public String getConsumerName() {
-        return consumerName;
-    }
-
-    public void setConsumerName(String consumerName) {
-        this.consumerName = consumerName;
-    }
-
-    public Integer getClassType() {
-        return classType;
-    }
-
-    public void setClassType(Integer classType) {
-        this.classType = classType;
     }
 
     public String getFormula() {
@@ -159,84 +112,12 @@ public class LoincDoc {
         this.formula = formula;
     }
 
-    public String getExmplAnswers() {
-        return exmplAnswers;
-    }
-
-    public void setExmplAnswers(String exmplAnswers) {
-        this.exmplAnswers = exmplAnswers;
-    }
-
-    public String getSurveyQuestText() {
-        return surveyQuestText;
-    }
-
-    public void setSurveyQuestText(String surveyQuestText) {
-        this.surveyQuestText = surveyQuestText;
-    }
-
-    public String getSurveyQuestSrc() {
-        return surveyQuestSrc;
-    }
-
-    public void setSurveyQuestSrc(String surveyQuestSrc) {
-        this.surveyQuestSrc = surveyQuestSrc;
-    }
-
-    public String getUnitsRequired() {
-        return unitsRequired;
-    }
-
-    public void setUnitsRequired(String unitsRequired) {
-        this.unitsRequired = unitsRequired;
-    }
-
-    public String getRelatedNames2() {
-        return relatedNames2;
-    }
-
-    public void setRelatedNames2(String relatedNames2) {
-        this.relatedNames2 = relatedNames2;
-    }
-
     public String getShortName() {
         return shortName;
     }
 
     public void setShortName(String shortName) {
         this.shortName = shortName;
-    }
-
-    public String getOrderObs() {
-        return orderObs;
-    }
-
-    public void setOrderObs(String orderObs) {
-        this.orderObs = orderObs;
-    }
-
-    public String getHl7FieldSubfieldId() {
-        return hl7FieldSubfieldId;
-    }
-
-    public void setHl7FieldSubfieldId(String hl7FieldSubfieldId) {
-        this.hl7FieldSubfieldId = hl7FieldSubfieldId;
-    }
-
-    public String getExternalCopyrightNotice() {
-        return externalCopyrightNotice;
-    }
-
-    public void setExternalCopyrightNotice(String externalCopyrightNotice) {
-        this.externalCopyrightNotice = externalCopyrightNotice;
-    }
-
-    public String getExampleUnits() {
-        return exampleUnits;
-    }
-
-    public void setExampleUnits(String exampleUnits) {
-        this.exampleUnits = exampleUnits;
     }
 
     public String getLongCommonName() {
@@ -247,35 +128,19 @@ public class LoincDoc {
         this.longCommonName = longCommonName;
     }
 
-    public String getExampleUcumUnits() {
-        return exampleUcumUnits;
-    }
-
-    public void setExampleUcumUnits(String exampleUcumUnits) {
-        this.exampleUcumUnits = exampleUcumUnits;
-    }
-
-    public String getStatusReason() {
-        return statusReason;
-    }
-
-    public void setStatusReason(String statusReason) {
-        this.statusReason = statusReason;
-    }
-
-    public String getStatusText() {
-        return statusText;
-    }
-
-    public void setStatusText(String statusText) {
-        this.statusText = statusText;
-    }
-
     public String getDisplayName() {
         return displayName;
     }
 
     public void setDisplayName(String displayName) {
         this.displayName = displayName;
+    }
+
+    public String getDefinitionDescription() {
+        return definitionDescription;
+    }
+
+    public void setDefinitionDescription(String definitionDescription) {
+        this.definitionDescription = definitionDescription;
     }
 }
